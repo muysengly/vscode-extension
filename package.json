@@ -1,6 +1,6 @@
 {
-  "name": "extension",
-  "displayName": "extension",
+  "name": "vscode-extension",
+  "displayName": "vscode-extension",
   "description": "Send file/folder references to the OpenCode terminal",
   "version": "0.0.1",
   "publisher": "muysengly",
