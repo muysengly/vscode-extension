@@ -6,3 +6,4 @@ npm run package
 
 # ដំឡើង extension ទៅក្នុង VS Code (Install the extension into VS Code)
 code --install-extension vscode-extension-0.0.1.vsix --force
+

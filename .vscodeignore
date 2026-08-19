@@ -6,4 +6,6 @@ node_modules/**
 jsconfig.json
 tsconfig.json
 setup.sh
+.hintrc
+ws.code-workspace
 *.vsix
