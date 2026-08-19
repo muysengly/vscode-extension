@@ -1,9 +1,6 @@
 src/**
 out/**/*.map
 node_modules/**
-!node_modules/node-pty/**
-!node_modules/node-addon-api/**
-!node_modules/@xterm/**
 .gitignore
 .vscodeignore
 jsconfig.json
