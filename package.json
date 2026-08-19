@@ -28,8 +28,7 @@
     "keybindings": [
       {
         "key": "ctrl+o",
-        "command": "extension.open",
-        "when": "!editorTextFocus"
+        "command": "extension.open"
       },
       {
         "key": "ctrl+o",
