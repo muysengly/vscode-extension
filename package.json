@@ -1,7 +1,7 @@
 {
   "name": "extension",
   "displayName": "extension",
-  "description": "Send @file#Lstart-end reference to the active terminal",
+  "description": "Send file/folder references to the OpenCode terminal",
   "version": "0.0.1",
   "publisher": "muysengly",
   "engines": {
@@ -11,14 +11,19 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:extension.send"
+    "onCommand:extension.send",
+    "onCommand:extension.sendFromExplorer"
   ],
-  "main": "./main.js",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "extension.send",
-        "title": "Extension: Send File Line Range"
+        "title": "Extension: Send File Line Range to OpenCode"
+      },
+      {
+        "command": "extension.sendFromExplorer",
+        "title": "Send File/Folder to OpenCode"
       }
     ],
     "keybindings": [
@@ -26,13 +31,23 @@
         "key": "ctrl+shift+o",
         "command": "extension.send",
         "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+shift+o",
+        "command": "extension.sendFromExplorer",
+        "when": "filesExplorerFocus"
       }
     ]
   },
   "scripts": {
-    "package": "vsce package"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npm run compile && vsce package --out vscode-extension-0.0.1.vsix --allow-missing-repository"
   },
   "devDependencies": {
-    "@vscode/vsce": "^2.24.0"
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.24.0",
+    "typescript": "^5.4.0"
   }
 }
