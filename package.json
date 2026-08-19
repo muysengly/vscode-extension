@@ -4,6 +4,7 @@
   "description": "Send file line references to OpenCode in the terminal.",
   "version": "0.0.1",
   "publisher": "muysengly",
+  "icon": "icons/opencode.png",
   "engines": {
     "vscode": "^1.75.0"
   },

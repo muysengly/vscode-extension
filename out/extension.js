@@ -11,24 +11,26 @@ function toRelativePath(uri) {
 function findOpenCodeTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
-function createOpenCodeTerminal() {
+function createOpenCodeTerminal(context) {
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
     const windir = process.env.windir ?? "C:\\Windows";
+    const iconPath = vscode.Uri.joinPath(context.extensionUri, "icons", "opencode.png");
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
         shellPath: path.join(windir, "System32", "cmd.exe"),
         cwd,
+        iconPath,
     });
     terminal.show();
     terminal.sendText("opencode");
     return terminal;
 }
-function openOpenCodeTerminal() {
+function openOpenCodeTerminal(context) {
     const existing = findOpenCodeTerminal();
     if (existing) {
         existing.dispose();
     }
-    return createOpenCodeTerminal();
+    return createOpenCodeTerminal(context);
 }
 function sendToTerminal(text, message) {
     const terminal = findOpenCodeTerminal();
@@ -42,11 +44,11 @@ function sendToTerminal(text, message) {
 }
 function activate(context) {
     const open = vscode.commands.registerCommand("extension.open", () => {
-        openOpenCodeTerminal();
+        openOpenCodeTerminal(context);
     });
     const send = vscode.commands.registerCommand("extension.send", () => {
         if (!findOpenCodeTerminal()) {
-            createOpenCodeTerminal();
+            createOpenCodeTerminal(context);
             vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
             return;
         }
