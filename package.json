@@ -1,7 +1,7 @@
 {
   "name": "vscode-extension",
   "displayName": "vscode-extension",
-  "description": "Send file/folder references to the OpenCode terminal",
+  "description": "OpenCode in the secondary side bar. Send file/folder references to it.",
   "version": "0.0.1",
   "publisher": "muysengly",
   "engines": {
@@ -12,10 +12,41 @@
   ],
   "activationEvents": [
     "onCommand:extension.send",
-    "onCommand:extension.sendFromExplorer"
+    "onCommand:extension.sendFromExplorer",
+    "onView:opencode.view"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "OpenCode",
+      "properties": {
+        "opencode.loadDelaySeconds": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "description": "Seconds to wait for OpenCode to finish loading before sending a reference to it."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "opencode",
+          "title": "OpenCode",
+          "icon": "$(terminal)"
+        }
+      ]
+    },
+    "views": {
+      "opencode": [
+        {
+          "type": "webview",
+          "id": "opencode.view",
+          "name": "OpenCode",
+          "location": "secondarySideBar"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "extension.send",
@@ -46,8 +77,14 @@
     "package": "npm run compile && vsce package --out vscode-extension-0.0.1.vsix --allow-missing-repository"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^2.24.0",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "node-pty": "^1.1.0"
   }
 }
