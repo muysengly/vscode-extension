@@ -27,12 +27,9 @@
     ],
     "keybindings": [
       {
-        "key": "ctrl+alt+o",
-        "command": "extension.open"
-      },
-      {
-        "key": "ctrl+shift+`",
-        "command": "extension.open"
+        "key": "ctrl+o",
+        "command": "extension.open",
+        "when": "!editorTextFocus"
       },
       {
         "key": "ctrl+o",
@@ -48,8 +45,9 @@
     "package": "npm run compile && vsce package --out vscode-extension-0.0.1.vsix --allow-missing-repository"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/vscode": "^1.75.0",
-    "@vscode/vsce": "^2.24.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
   }
 }

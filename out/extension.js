@@ -2,39 +2,50 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
+const path = require("path");
 const vscode = require("vscode");
+const TERMINAL_NAME = "OpenCode";
 function toRelativePath(uri) {
     return vscode.workspace.asRelativePath(uri, false).replace(/\\/g, "/");
 }
+function findOpenCodeTerminal() {
+    return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
+}
+function openOpenCodeTerminal() {
+    const existing = findOpenCodeTerminal();
+    if (existing) {
+        return existing;
+    }
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const windir = process.env.windir ?? "C:\\Windows";
+    return vscode.window.createTerminal({
+        name: TERMINAL_NAME,
+        shellPath: path.join(windir, "System32", "cmd.exe"),
+        shellArgs: ["/k", "opencode"],
+        cwd,
+        hideFromUser: true,
+    });
+}
 function sendToTerminal(text, message) {
-    const terminal = vscode.window.activeTerminal;
+    const terminal = findOpenCodeTerminal();
     if (!terminal) {
         vscode.window.showWarningMessage("OpenCode terminal is not active.");
         return;
     }
     terminal.show();
-    terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, true);
+    terminal.sendText(`\x1b[200~${text}\x1b[201~`, false);
     vscode.window.setStatusBarMessage(message, 3000);
-}
-function openOpenCodeTerminal() {
-    const existing = vscode.window.terminals.find((t) => t.name === "OpenCode");
-    if (existing) {
-        return existing;
-    }
-    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
-    const terminal = vscode.window.createTerminal({
-        name: "OpenCode",
-        cwd,
-    });
-    terminal.sendText("opencode");
-    return terminal;
 }
 function activate(context) {
     const open = vscode.commands.registerCommand("extension.open", () => {
-        const terminal = openOpenCodeTerminal();
-        terminal.show();
+        openOpenCodeTerminal().show();
     });
     const send = vscode.commands.registerCommand("extension.send", () => {
+        if (!findOpenCodeTerminal()) {
+            openOpenCodeTerminal().show();
+            vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
+            return;
+        }
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
