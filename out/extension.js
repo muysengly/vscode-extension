@@ -11,24 +11,6 @@ function toRelativePath(uri) {
 function findOpenCodeTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
-function waitForShellIntegration(terminal) {
-    const existing = terminal.shellIntegration;
-    if (existing) {
-        return Promise.resolve(existing);
-    }
-    return new Promise((resolve) => {
-        const disposable = vscode.window.onDidChangeTerminalShellIntegration((event) => {
-            if (event.terminal === terminal && event.shellIntegration) {
-                disposable.dispose();
-                resolve(event.shellIntegration);
-            }
-        });
-        setTimeout(() => {
-            disposable.dispose();
-            resolve(undefined);
-        }, 5000);
-    });
-}
 async function openOpenCodeTerminal() {
     const existing = findOpenCodeTerminal();
     if (existing) {
@@ -44,13 +26,7 @@ async function openOpenCodeTerminal() {
     });
     terminal.show();
     await vscode.commands.executeCommand("workbench.action.terminal.moveIntoNewWindow");
-    const shell = await waitForShellIntegration(terminal);
-    if (shell) {
-        shell.executeCommand("opencode");
-    }
-    else {
-        terminal.sendText("opencode");
-    }
+    terminal.sendText("opencode");
     return terminal;
 }
 function sendToTerminal(text, message) {
