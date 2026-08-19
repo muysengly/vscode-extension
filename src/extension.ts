@@ -11,13 +11,7 @@ function findOpenCodeTerminal(): vscode.Terminal | undefined {
   return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
 
-async function openOpenCodeTerminal(): Promise<vscode.Terminal> {
-  const existing = findOpenCodeTerminal();
-
-  if (existing) {
-    return existing;
-  }
-
+async function createFloatingOpenCodeTerminal(): Promise<vscode.Terminal> {
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
   const windir = process.env.windir ?? "C:\\Windows";
 
@@ -32,10 +26,25 @@ async function openOpenCodeTerminal(): Promise<vscode.Terminal> {
   await vscode.commands.executeCommand(
     "workbench.action.terminal.moveIntoNewWindow"
   );
+  await vscode.commands.executeCommand("workbench.action.terminal.focus");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await vscode.commands.executeCommand(
+    "workbench.action.enableCompactAuxiliaryWindow"
+  );
 
   terminal.sendText("opencode");
 
   return terminal;
+}
+
+async function openOpenCodeTerminal(): Promise<vscode.Terminal> {
+  const existing = findOpenCodeTerminal();
+
+  if (existing) {
+    existing.dispose();
+  }
+
+  return createFloatingOpenCodeTerminal();
 }
 
 function sendToTerminal(text: string, message: string): void {
@@ -47,7 +56,7 @@ function sendToTerminal(text: string, message: string): void {
   }
 
   terminal.show();
-  terminal.sendText(`\x1b[200~${text}\x1b[201~`, false);
+  terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
   vscode.window.setStatusBarMessage(message, 3000);
 }
 
@@ -58,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const send = vscode.commands.registerCommand("extension.send", async () => {
     if (!findOpenCodeTerminal()) {
-      (await openOpenCodeTerminal()).show();
+      (await createFloatingOpenCodeTerminal()).show();
       vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
       return;
     }
