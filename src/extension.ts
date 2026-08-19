@@ -11,7 +11,7 @@ function findOpenCodeTerminal(): vscode.Terminal | undefined {
   return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
 
-async function createFloatingOpenCodeTerminal(): Promise<vscode.Terminal> {
+function createOpenCodeTerminal(): vscode.Terminal {
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
   const windir = process.env.windir ?? "C:\\Windows";
 
@@ -19,32 +19,22 @@ async function createFloatingOpenCodeTerminal(): Promise<vscode.Terminal> {
     name: TERMINAL_NAME,
     shellPath: path.join(windir, "System32", "cmd.exe"),
     cwd,
-    hideFromUser: true,
   });
 
   terminal.show();
-  await vscode.commands.executeCommand(
-    "workbench.action.terminal.moveIntoNewWindow"
-  );
-  await vscode.commands.executeCommand("workbench.action.terminal.focus");
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  await vscode.commands.executeCommand(
-    "workbench.action.enableCompactAuxiliaryWindow"
-  );
-
   terminal.sendText("opencode");
 
   return terminal;
 }
 
-async function openOpenCodeTerminal(): Promise<vscode.Terminal> {
+function openOpenCodeTerminal(): vscode.Terminal {
   const existing = findOpenCodeTerminal();
 
   if (existing) {
     existing.dispose();
   }
 
-  return createFloatingOpenCodeTerminal();
+  return createOpenCodeTerminal();
 }
 
 function sendToTerminal(text: string, message: string): void {
@@ -61,13 +51,13 @@ function sendToTerminal(text: string, message: string): void {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const open = vscode.commands.registerCommand("extension.open", async () => {
-    (await openOpenCodeTerminal()).show();
+  const open = vscode.commands.registerCommand("extension.open", () => {
+    openOpenCodeTerminal();
   });
 
-  const send = vscode.commands.registerCommand("extension.send", async () => {
+  const send = vscode.commands.registerCommand("extension.send", () => {
     if (!findOpenCodeTerminal()) {
-      (await createFloatingOpenCodeTerminal()).show();
+      createOpenCodeTerminal();
       vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
       return;
     }
@@ -93,9 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const file = toRelativePath(document.uri);
     const range =
-      startLine === endLine
-        ? `L${startLine}`
-        : `L${startLine}-${endLine}`;
+      startLine === endLine ? `L${startLine}` : `L${startLine}-${endLine}`;
 
     const reference = `@${file}#${range}`;
 

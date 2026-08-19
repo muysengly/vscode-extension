@@ -11,29 +11,24 @@ function toRelativePath(uri) {
 function findOpenCodeTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
-async function createFloatingOpenCodeTerminal() {
+function createOpenCodeTerminal() {
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
     const windir = process.env.windir ?? "C:\\Windows";
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
         shellPath: path.join(windir, "System32", "cmd.exe"),
         cwd,
-        hideFromUser: true,
     });
     terminal.show();
-    await vscode.commands.executeCommand("workbench.action.terminal.moveIntoNewWindow");
-    await vscode.commands.executeCommand("workbench.action.terminal.focus");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await vscode.commands.executeCommand("workbench.action.enableCompactAuxiliaryWindow");
     terminal.sendText("opencode");
     return terminal;
 }
-async function openOpenCodeTerminal() {
+function openOpenCodeTerminal() {
     const existing = findOpenCodeTerminal();
     if (existing) {
         existing.dispose();
     }
-    return createFloatingOpenCodeTerminal();
+    return createOpenCodeTerminal();
 }
 function sendToTerminal(text, message) {
     const terminal = findOpenCodeTerminal();
@@ -46,12 +41,12 @@ function sendToTerminal(text, message) {
     vscode.window.setStatusBarMessage(message, 3000);
 }
 function activate(context) {
-    const open = vscode.commands.registerCommand("extension.open", async () => {
-        (await openOpenCodeTerminal()).show();
+    const open = vscode.commands.registerCommand("extension.open", () => {
+        openOpenCodeTerminal();
     });
-    const send = vscode.commands.registerCommand("extension.send", async () => {
+    const send = vscode.commands.registerCommand("extension.send", () => {
         if (!findOpenCodeTerminal()) {
-            (await createFloatingOpenCodeTerminal()).show();
+            createOpenCodeTerminal();
             vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
             return;
         }
@@ -68,9 +63,7 @@ function activate(context) {
         const startLine = selection.start.line + 1;
         const endLine = selection.end.line + 1;
         const file = toRelativePath(document.uri);
-        const range = startLine === endLine
-            ? `L${startLine}`
-            : `L${startLine}-${endLine}`;
+        const range = startLine === endLine ? `L${startLine}` : `L${startLine}-${endLine}`;
         const reference = `@${file}#${range}`;
         sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
     });
