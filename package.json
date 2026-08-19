@@ -19,11 +19,23 @@
       {
         "command": "extension.send",
         "title": "Extension: Send File Line Range to OpenCode"
+      },
+      {
+        "command": "extension.open",
+        "title": "Extension: Open OpenCode"
       }
     ],
     "keybindings": [
       {
-        "key": "ctrl+shift+o",
+        "key": "ctrl+alt+o",
+        "command": "extension.open"
+      },
+      {
+        "key": "ctrl+shift+`",
+        "command": "extension.open"
+      },
+      {
+        "key": "ctrl+o",
         "command": "extension.send",
         "when": "editorTextFocus"
       }

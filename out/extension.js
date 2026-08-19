@@ -13,10 +13,27 @@ function sendToTerminal(text, message) {
         return;
     }
     terminal.show();
-    terminal.sendText(text, true);
+    terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, true);
     vscode.window.setStatusBarMessage(message, 3000);
 }
+function openOpenCodeTerminal() {
+    const existing = vscode.window.terminals.find((t) => t.name === "OpenCode");
+    if (existing) {
+        return existing;
+    }
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const terminal = vscode.window.createTerminal({
+        name: "OpenCode",
+        cwd,
+    });
+    terminal.sendText("opencode");
+    return terminal;
+}
 function activate(context) {
+    const open = vscode.commands.registerCommand("extension.open", () => {
+        const terminal = openOpenCodeTerminal();
+        terminal.show();
+    });
     const send = vscode.commands.registerCommand("extension.send", () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -37,7 +54,7 @@ function activate(context) {
         const reference = `@${file}#${range}`;
         sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
     });
-    context.subscriptions.push(send);
+    context.subscriptions.push(open, send);
 }
 function deactivate() { }
 //# sourceMappingURL=extension.js.map
