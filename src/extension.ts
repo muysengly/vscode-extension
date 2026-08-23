@@ -36,6 +36,11 @@ function createOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Termin
 
 const CLIPBOARD_SENTINEL = "__opencode_no_selection__";
 
+function normalizeFsPath(fsPath: string): string {
+  const trimmed = fsPath.replace(/[\\/]+$/, "");
+  return process.platform === "win32" ? trimmed.toLowerCase() : trimmed;
+}
+
 async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
   const previous = await vscode.env.clipboard.readText();
   await vscode.env.clipboard.writeText(CLIPBOARD_SENTINEL);
@@ -57,12 +62,19 @@ async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
       return [];
     }
 
+    const rootPaths = new Set(
+      (vscode.workspace.workspaceFolders ?? []).map((folder) =>
+        normalizeFsPath(folder.uri.fsPath)
+      )
+    );
+
     return raw
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean)
       .filter((line) => line !== CLIPBOARD_SENTINEL)
-      .map((p) => vscode.Uri.file(p));
+      .map((p) => vscode.Uri.file(p))
+      .filter((uri) => !rootPaths.has(normalizeFsPath(uri.fsPath)));
   } finally {
     await vscode.env.clipboard.writeText(previous);
   }
@@ -158,7 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
       const uris = await getExplorerSelectionUris();
 
       if (!uris.length) {
-        sendEditorReference();
+        findOpenCodeTerminal()?.show();
         return;
       }
 
