@@ -24,6 +24,9 @@ const vscode = require("vscode");
 // BLOCK 1 — Terminal management
 // ----------------------------------------------------------------------------
 const TERMINAL_NAME = "OpenCode";
+// Preloaded into every OpenCode terminal so Python resolves to this venv
+// without manually running Set-ExecutionPolicy / Activate.ps1 first.
+const VENV_ROOT = "c:\\Users\\muysengly\\Desktop\\sm_system\\server\\.venv";
 function findTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
 }
@@ -33,6 +36,10 @@ function createTerminal(context) {
         shellPath: path.join(process.env.windir ?? "C:\\Windows", "System32", "cmd.exe"),
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
         iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
+        env: {
+            VIRTUAL_ENV: VENV_ROOT,
+            PATH: `${VENV_ROOT}\\Scripts;${process.env.PATH ?? ""}`,
+        },
     });
     terminal.show();
     terminal.sendText("opencode"); // launch opencode inside it

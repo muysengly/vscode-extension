@@ -4,5 +4,10 @@
       "path": "./",
     },
   ],
-  "settings": {},
+  "settings": {
+    // Run the PowerShell extension's language server without an Extension
+    // Terminal, so closing terminals can't kill it and log:
+    // "PowerShell process terminated or Extension Terminal was closed"
+    "powershell.integratedConsole.startInBackground": true,
+  },
 }
