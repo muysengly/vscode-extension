@@ -34,6 +34,53 @@ function createOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Termin
   return terminal;
 }
 
+async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
+  const previous = await vscode.env.clipboard.readText();
+  await vscode.env.clipboard.writeText("");
+
+  try {
+    await vscode.commands.executeCommand("copyFilePath");
+    const raw = await vscode.env.clipboard.readText();
+
+    return raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((p) => vscode.Uri.file(p));
+  } finally {
+    await vscode.env.clipboard.writeText(previous);
+  }
+}
+
+async function isDirectory(uri: vscode.Uri): Promise<boolean> {
+  try {
+    const stat = await vscode.workspace.fs.stat(uri);
+    return (stat.type & vscode.FileType.Directory) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+async function sendExplorerSelection(): Promise<void> {
+  const uris = await getExplorerSelectionUris();
+
+  if (!uris.length) {
+    vscode.window.showWarningMessage("No file or folder selected.");
+    return;
+  }
+
+  const refs: string[] = [];
+
+  for (const uri of uris) {
+    const file = toRelativePath(uri);
+    const isDir = await isDirectory(uri);
+    refs.push(isDir ? `@${file}/` : `@${file}`);
+  }
+
+  const reference = refs.join(" ");
+  sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
+}
+
 function sendToTerminal(text: string, message: string): void {
   const terminal = findOpenCodeTerminal();
 
@@ -48,14 +95,21 @@ function sendToTerminal(text: string, message: string): void {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const send = vscode.commands.registerCommand("extension.send", () => {
-    if (!findOpenCodeTerminal()) {
-      createOpenCodeTerminal(context);
-      vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
-      return;
-    }
+  const send = vscode.commands.registerCommand(
+    "extension.send",
+    async (args?: { source?: string }) => {
+      if (!findOpenCodeTerminal()) {
+        createOpenCodeTerminal(context);
+        vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
+        return;
+      }
 
-    const editor = vscode.window.activeTextEditor;
+      if (args?.source === "explorer") {
+        await sendExplorerSelection();
+        return;
+      }
+
+      const editor = vscode.window.activeTextEditor;
 
     if (!editor) {
       return;

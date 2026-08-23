@@ -25,6 +25,22 @@
     "keybindings": [
       {
         "key": "ctrl+o",
+        "command": "extension.send",
+        "args": {
+          "source": "editor"
+        },
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+o",
+        "command": "extension.send",
+        "args": {
+          "source": "explorer"
+        },
+        "when": "filesExplorerFocus"
+      },
+      {
+        "key": "ctrl+o",
         "command": "extension.send"
       }
     ]
