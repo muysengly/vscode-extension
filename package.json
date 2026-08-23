@@ -38,12 +38,12 @@
       {
         "key": "ctrl+o",
         "command": "extension.send",
-        "when": "editorTextFocus"
+        "when": "editorHasSelection"
       },
       {
         "key": "ctrl+o",
         "command": "extension.sendSelected",
-        "when": "filesExplorerFocus"
+        "when": "filesExplorerFocus && !editorHasSelection"
       }
     ]
   },
