@@ -2,7 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 // ============================================================================
-// Ctrl+O BEHAVIOR MAP
+// Ctrl+' BEHAVIOR MAP
 //
 // Editor focused (extension.send):
 //   cursor on a line, NO chars selected → @file#L<line>   <-- cursor alone counts
@@ -54,7 +54,7 @@ function createTerminal(context: vscode.ExtensionContext): vscode.Terminal {
 }
 
 // Returns true when the terminal already existed.
-// First-ever Ctrl+O only opens the terminal and sends nothing.
+// First-ever Ctrl+' only opens the terminal and sends nothing.
 function ensureTerminal(context: vscode.ExtensionContext): boolean {
   if (findTerminal()) {
     return true;
@@ -230,13 +230,13 @@ function sendToTerminal(text: string): void {
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    // Ctrl+O while typing in an editor.
+    // Ctrl+' while typing in an editor.
     vscode.commands.registerCommand("extension.send", () => {
       if (!ensureTerminal(context)) return;
       sendEditorReference();
     }),
 
-    // Ctrl+O while the Explorer sidebar has focus.
+    // Ctrl+' while the Explorer sidebar has focus.
     vscode.commands.registerCommand("extension.sendSelected", async () => {
       if (!ensureTerminal(context)) return;
 
@@ -252,7 +252,7 @@ export function activate(context: vscode.ExtensionContext) {
       await sendExplorerSelection(uris);
     }),
 
-    // Ctrl+O in Explorer with nothing selected (blank space click clears
+    // Ctrl+' in Explorer with nothing selected (blank space click clears
     // both selection and focus → listHasSelectionOrFocus is false).
     // Keybinding routes here BEFORE sendSelected can even try the clipboard,
     // so no stale/fallback file can ever be sent.
@@ -262,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
       setStatus("OpenCode: no file selected, sent cursor only.");
     }),
 
-    // Ctrl+O anywhere else → just focus (or open) the terminal.
+    // Ctrl+' anywhere else → just focus (or open) the terminal.
     vscode.commands.registerCommand("extension.focus", () => {
       const terminal = findTerminal() ?? createTerminal(context);
       terminal.show();

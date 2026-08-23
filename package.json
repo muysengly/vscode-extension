@@ -36,21 +36,21 @@
     ],
     "keybindings": [
       {
-        "key": "ctrl+o",
+        "key": "ctrl+'",
         "command": "extension.focus"
       },
       {
-        "key": "ctrl+o",
+        "key": "ctrl+'",
         "command": "extension.send",
         "when": "editorTextFocus"
       },
       {
-        "key": "ctrl+o",
+        "key": "ctrl+'",
         "command": "extension.explorerBlank",
         "when": "filesExplorerFocus && !listHasSelectionOrFocus"
       },
       {
-        "key": "ctrl+o",
+        "key": "ctrl+'",
         "command": "extension.sendSelected",
         "when": "filesExplorerFocus && listHasSelectionOrFocus"
       }
