@@ -126,6 +126,7 @@ function activate(context) {
         const uris = await getExplorerSelectionUris();
         if (!uris.length) {
             findOpenCodeTerminal()?.show();
+            vscode.window.setStatusBarMessage("OpenCode: no file selected, sent cursor only.", 3000);
             return;
         }
         await sendExplorerSelection(uris);

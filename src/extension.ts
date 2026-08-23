@@ -171,6 +171,10 @@ export function activate(context: vscode.ExtensionContext) {
 
       if (!uris.length) {
         findOpenCodeTerminal()?.show();
+        vscode.window.setStatusBarMessage(
+          "OpenCode: no file selected, sent cursor only.",
+          3000
+        );
         return;
       }
 
