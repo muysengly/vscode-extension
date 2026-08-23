@@ -84,6 +84,8 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
+    vscode.commands.executeCommand("workbench.action.files.saveAll");
+
     const selection = editor.selection;
     const startLine = selection.start.line + 1;
     const endLine = selection.end.line + 1;
