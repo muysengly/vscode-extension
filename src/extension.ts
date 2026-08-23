@@ -18,7 +18,7 @@ function createOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Termin
   const iconPath = vscode.Uri.joinPath(
     context.extensionUri,
     "icons",
-    "opencode.png"
+    "bun.png"
   );
 
   const terminal = vscode.window.createTerminal({

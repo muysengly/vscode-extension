@@ -14,7 +14,7 @@ function findOpenCodeTerminal() {
 function createOpenCodeTerminal(context) {
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
     const windir = process.env.windir ?? "C:\\Windows";
-    const iconPath = vscode.Uri.joinPath(context.extensionUri, "icons", "opencode.png");
+    const iconPath = vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png");
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
         shellPath: path.join(windir, "System32", "cmd.exe"),
