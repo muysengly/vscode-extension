@@ -1,38 +1,128 @@
 import * as path from "path";
 import * as vscode from "vscode";
 
+// ============================================================================
+// Ctrl+O BEHAVIOR MAP
+//
+// Editor focused (extension.send):
+//   cursor on a line, NO chars selected → @file#L<line>   <-- cursor alone counts
+//   text selected                       → @file#L<start>-<end>
+//
+// Explorer focused (extension.sendSelected):
+//   file selected                       → @file
+//   folder selected                     → @folder/
+//   blank space                         → focus terminal + status message
+//
+// Anywhere else (extension.focus):
+//                                       → focus / open the terminal
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// BLOCK 1 — Terminal management
+// ----------------------------------------------------------------------------
+
 const TERMINAL_NAME = "OpenCode";
 
+function findTerminal(): vscode.Terminal | undefined {
+  return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
+}
+
+function createTerminal(context: vscode.ExtensionContext): vscode.Terminal {
+  const terminal = vscode.window.createTerminal({
+    name: TERMINAL_NAME,
+    shellPath: path.join(
+      process.env.windir ?? "C:\\Windows",
+      "System32",
+      "cmd.exe"
+    ),
+    cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
+    iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
+  });
+
+  terminal.show();
+  terminal.sendText("opencode"); // launch opencode inside it
+  return terminal;
+}
+
+// Returns true when the terminal already existed.
+// First-ever Ctrl+O only opens the terminal and sends nothing.
+function ensureTerminal(context: vscode.ExtensionContext): boolean {
+  if (findTerminal()) {
+    return true;
+  }
+  createTerminal(context);
+  setStatus("OpenCode terminal opened.");
+  return false;
+}
+
+// ----------------------------------------------------------------------------
+// BLOCK 2 — Small helpers
+// ----------------------------------------------------------------------------
+
+function setStatus(message: string): void {
+  vscode.window.setStatusBarMessage(message, 3000);
+}
+
+// "src\folder\file.ts" → "src/folder/file.ts" (relative to workspace root)
 function toRelativePath(uri: vscode.Uri): string {
   return vscode.workspace.asRelativePath(uri, false).replace(/\\/g, "/");
 }
 
-function findOpenCodeTerminal(): vscode.Terminal | undefined {
-  return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
+// ----------------------------------------------------------------------------
+// BLOCK 3 — Editor reference (cursor line OR selection)
+// ----------------------------------------------------------------------------
+
+function getEditorReference(editor: vscode.TextEditor): string {
+  const file = toRelativePath(editor.document.uri);
+  const selection = editor.selection;
+
+  const startLine = selection.start.line + 1; // VSCode lines are 0-based
+  let endLine = selection.end.line + 1;
+
+  // Nothing selected → cursor only → ALWAYS the cursor's own line.
+  // e.g. cursor sitting on line 12 → "@src/app.ts#L12"
+  if (selection.isEmpty) {
+    return `@${file}#L${startLine}`;
+  }
+
+  // Multi-line selection ending at column 0 really ends on the previous line.
+  if (selection.end.character === 0 && endLine > startLine) {
+    endLine -= 1;
+  }
+
+  // One line selected  → "@src/app.ts#L5"
+  // Several lines      → "@src/app.ts#L5-L9"
+  return startLine === endLine
+    ? `@${file}#L${startLine}`
+    : `@${file}#L${startLine}-${endLine}`;
 }
 
-function createOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Terminal {
-  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri;
-  const windir = process.env.windir ?? "C:\\Windows";
+function sendEditorReference(): void {
+  const editor = vscode.window.activeTextEditor;
 
-  const iconPath = vscode.Uri.joinPath(
-    context.extensionUri,
-    "icons",
-    "bun.png"
-  );
+  // No visible editor → just raise the terminal.
+  if (!editor) {
+    findTerminal()?.show();
+    return;
+  }
 
-  const terminal = vscode.window.createTerminal({
-    name: TERMINAL_NAME,
-    shellPath: path.join(windir, "System32", "cmd.exe"),
-    cwd,
-    iconPath,
-  });
+  // Unsaved files have no path to reference.
+  if (editor.document.uri.scheme === "untitled") {
+    vscode.window.showWarningMessage(
+      "Cannot reference an unsaved file. Save it first."
+    );
+    return;
+  }
 
-  terminal.show();
-  terminal.sendText("opencode");
+  void vscode.commands.executeCommand("workbench.action.files.saveAll");
 
-  return terminal;
+  const reference = getEditorReference(editor);
+  sendToTerminal(reference);
 }
+
+// ----------------------------------------------------------------------------
+// BLOCK 4 — Explorer selection (clipboard round-trip)
+// ----------------------------------------------------------------------------
 
 const CLIPBOARD_SENTINEL = "__opencode_no_selection__";
 
@@ -41,6 +131,12 @@ function normalizeFsPath(fsPath: string): string {
   return process.platform === "win32" ? trimmed.toLowerCase() : trimmed;
 }
 
+// How this works:
+// 1. Save the user's clipboard, write a sentinel marker instead.
+// 2. Run VSCode's built-in "copyFilePath" on the explorer selection.
+// 3. Poll the clipboard briefly. Sentinel untouched → nothing was selected.
+// 4. Restore the user's clipboard either way.
+
 async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
   const previous = await vscode.env.clipboard.readText();
   await vscode.env.clipboard.writeText(CLIPBOARD_SENTINEL);
@@ -48,20 +144,20 @@ async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
   try {
     await vscode.commands.executeCommand("copyFilePath");
 
+    // Wait up to ~500ms for copyFilePath to overwrite the sentinel.
     let raw = "";
-    for (let i = 0; i < 10 && raw !== CLIPBOARD_SENTINEL; i++) {
+    for (let i = 0; i < 10; i++) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       raw = (await vscode.env.clipboard.readText()).trim();
-
-      if (raw && raw !== CLIPBOARD_SENTINEL) {
-        break;
-      }
+      if (raw && raw !== CLIPBOARD_SENTINEL) break;
     }
 
+    // Sentinel survived → explorer had no selection (blank space).
     if (!raw || raw === CLIPBOARD_SENTINEL) {
       return [];
     }
 
+    // Drop workspace-root rows (blank-space copies yield the root folder).
     const rootPaths = new Set(
       (vscode.workspace.workspaceFolders ?? []).map((folder) =>
         normalizeFsPath(folder.uri.fsPath)
@@ -72,11 +168,10 @@ async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean)
-      .filter((line) => line !== CLIPBOARD_SENTINEL)
       .map((p) => vscode.Uri.file(p))
       .filter((uri) => !rootPaths.has(normalizeFsPath(uri.fsPath)));
   } finally {
-    await vscode.env.clipboard.writeText(previous);
+    await vscode.env.clipboard.writeText(previous); // restore clipboard
   }
 }
 
@@ -89,21 +184,26 @@ async function isDirectory(uri: vscode.Uri): Promise<boolean> {
   }
 }
 
+// File → "@src/app.ts"   Folder → "@src/docs/"
 async function sendExplorerSelection(uris: vscode.Uri[]): Promise<void> {
   const refs: string[] = [];
 
   for (const uri of uris) {
     const file = toRelativePath(uri);
-    const isDir = await isDirectory(uri);
-    refs.push(isDir ? `@${file}/` : `@${file}`);
+    refs.push((await isDirectory(uri)) ? `@${file}/` : `@${file}`);
   }
 
-  const reference = refs.join(" ");
-  sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
+  sendToTerminal(refs.join(" "));
 }
 
-function sendToTerminal(text: string, message: string): void {
-  const terminal = findOpenCodeTerminal();
+// ----------------------------------------------------------------------------
+// BLOCK 5 — Send to terminal
+// ----------------------------------------------------------------------------
+
+// Bracketed-paste codes (\x1b[200~ ... \x1b[201~) insert the text literally
+// instead of letting the shell execute each line as it arrives.
+function sendToTerminal(text: string): void {
+  const terminal = findTerminal();
 
   if (!terminal) {
     vscode.window.showWarningMessage("OpenCode terminal is not active.");
@@ -112,89 +212,43 @@ function sendToTerminal(text: string, message: string): void {
 
   terminal.show();
   terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
-  vscode.window.setStatusBarMessage(message, 3000);
+  setStatus(`OpenCode reference sent: ${text}`);
 }
 
-function sendEditorReference(): void {
-  const editor = vscode.window.activeTextEditor;
-
-  if (!editor) {
-    findOpenCodeTerminal()?.show();
-    return;
-  }
-
-  const document = editor.document;
-
-  if (document.uri.scheme === "untitled") {
-    vscode.window.showWarningMessage(
-      "Cannot reference an unsaved file. Save it first."
-    );
-    return;
-  }
-
-  vscode.commands.executeCommand("workbench.action.files.saveAll");
-
-  const selection = editor.selection;
-  const startLine = selection.start.line + 1;
-  const endLine = selection.end.line + 1;
-
-  const file = toRelativePath(document.uri);
-  const range =
-    startLine === endLine ? `L${startLine}` : `L${startLine}-${endLine}`;
-
-  const reference = `@${file}#${range}`;
-
-  sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
-}
+// ----------------------------------------------------------------------------
+// BLOCK 6 — Commands (keybindings live in package.json)
+// ----------------------------------------------------------------------------
 
 export function activate(context: vscode.ExtensionContext) {
-  const send = vscode.commands.registerCommand("extension.send", () => {
-    if (!findOpenCodeTerminal()) {
-      createOpenCodeTerminal(context);
-      vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
-      return;
-    }
+  context.subscriptions.push(
+    // Ctrl+O while typing in an editor.
+    vscode.commands.registerCommand("extension.send", () => {
+      if (!ensureTerminal(context)) return;
+      sendEditorReference();
+    }),
 
-    sendEditorReference();
-  });
-
-  const sendSelected = vscode.commands.registerCommand(
-    "extension.sendSelected",
-    async () => {
-      if (!findOpenCodeTerminal()) {
-        createOpenCodeTerminal(context);
-        vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
-        return;
-      }
+    // Ctrl+O while the Explorer sidebar has focus.
+    vscode.commands.registerCommand("extension.sendSelected", async () => {
+      if (!ensureTerminal(context)) return;
 
       const uris = await getExplorerSelectionUris();
 
+      // Blank space in explorer → focus terminal only, no reference sent.
       if (!uris.length) {
-        findOpenCodeTerminal()?.show();
-        vscode.window.setStatusBarMessage(
-          "OpenCode: no file selected, sent cursor only.",
-          3000
-        );
+        findTerminal()?.show();
+        setStatus("OpenCode: no file selected, sent cursor only.");
         return;
       }
 
       await sendExplorerSelection(uris);
-    }
+    }),
+
+    // Ctrl+O anywhere else → just focus (or open) the terminal.
+    vscode.commands.registerCommand("extension.focus", () => {
+      const terminal = findTerminal() ?? createTerminal(context);
+      terminal.show();
+    })
   );
-
-  const focus = vscode.commands.registerCommand("extension.focus", () => {
-    const existing = findOpenCodeTerminal();
-
-    if (existing) {
-      existing.show();
-      return;
-    }
-
-    createOpenCodeTerminal(context);
-    vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
-  });
-
-  context.subscriptions.push(send, sendSelected, focus);
 }
 
-export function deactivate() { }
+export function deactivate() {}
