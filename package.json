@@ -19,7 +19,7 @@
     "commands": [
       {
         "command": "extension.send",
-        "title": "Extension: Send File Line Range to OpenCode"
+        "title": "Extension: Send Cursor Line or Selection to OpenCode"
       },
       {
         "command": "extension.sendSelected",
@@ -38,12 +38,12 @@
       {
         "key": "ctrl+o",
         "command": "extension.send",
-        "when": "editorHasSelection"
+        "when": "editorTextFocus"
       },
       {
         "key": "ctrl+o",
         "command": "extension.sendSelected",
-        "when": "filesExplorerFocus && !editorHasSelection"
+        "when": "filesExplorerFocus"
       }
     ]
   },

@@ -82,6 +82,26 @@ function sendToTerminal(text, message) {
     terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
     vscode.window.setStatusBarMessage(message, 3000);
 }
+function sendEditorReference() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        findOpenCodeTerminal()?.show();
+        return;
+    }
+    const document = editor.document;
+    if (document.uri.scheme === "untitled") {
+        vscode.window.showWarningMessage("Cannot reference an unsaved file. Save it first.");
+        return;
+    }
+    vscode.commands.executeCommand("workbench.action.files.saveAll");
+    const selection = editor.selection;
+    const startLine = selection.start.line + 1;
+    const endLine = selection.end.line + 1;
+    const file = toRelativePath(document.uri);
+    const range = startLine === endLine ? `L${startLine}` : `L${startLine}-${endLine}`;
+    const reference = `@${file}#${range}`;
+    sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
+}
 function activate(context) {
     const send = vscode.commands.registerCommand("extension.send", () => {
         if (!findOpenCodeTerminal()) {
@@ -89,28 +109,7 @@ function activate(context) {
             vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
             return;
         }
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            findOpenCodeTerminal()?.show();
-            return;
-        }
-        const document = editor.document;
-        if (document.uri.scheme === "untitled") {
-            vscode.window.showWarningMessage("Cannot reference an unsaved file. Save it first.");
-            return;
-        }
-        const selection = editor.selection;
-        if (selection.isEmpty) {
-            findOpenCodeTerminal()?.show();
-            return;
-        }
-        vscode.commands.executeCommand("workbench.action.files.saveAll");
-        const startLine = selection.start.line + 1;
-        const endLine = selection.end.line + 1;
-        const file = toRelativePath(document.uri);
-        const range = startLine === endLine ? `L${startLine}` : `L${startLine}-${endLine}`;
-        const reference = `@${file}#${range}`;
-        sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
+        sendEditorReference();
     });
     const sendSelected = vscode.commands.registerCommand("extension.sendSelected", async () => {
         if (!findOpenCodeTerminal()) {
@@ -120,7 +119,7 @@ function activate(context) {
         }
         const uris = await getExplorerSelectionUris();
         if (!uris.length) {
-            findOpenCodeTerminal()?.show();
+            sendEditorReference();
             return;
         }
         await sendExplorerSelection(uris);
