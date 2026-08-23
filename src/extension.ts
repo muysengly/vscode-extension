@@ -40,7 +40,12 @@ async function getExplorerSelectionUris(): Promise<vscode.Uri[]> {
 
   try {
     await vscode.commands.executeCommand("copyFilePath");
-    const raw = await vscode.env.clipboard.readText();
+
+    let raw = "";
+    for (let i = 0; i < 10 && !raw; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      raw = (await vscode.env.clipboard.readText()).trim();
+    }
 
     return raw
       .split(/\r?\n/)
@@ -95,21 +100,14 @@ function sendToTerminal(text: string, message: string): void {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const send = vscode.commands.registerCommand(
-    "extension.send",
-    async (args?: { source?: string }) => {
-      if (!findOpenCodeTerminal()) {
-        createOpenCodeTerminal(context);
-        vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
-        return;
-      }
+  const send = vscode.commands.registerCommand("extension.send", () => {
+    if (!findOpenCodeTerminal()) {
+      createOpenCodeTerminal(context);
+      vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
+      return;
+    }
 
-      if (args?.source === "explorer") {
-        await sendExplorerSelection();
-        return;
-      }
-
-      const editor = vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor;
 
     if (!editor) {
       return;
@@ -139,7 +137,20 @@ export function activate(context: vscode.ExtensionContext) {
     sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
   });
 
-  context.subscriptions.push(send);
+  const sendSelected = vscode.commands.registerCommand(
+    "extension.sendSelected",
+    async () => {
+      if (!findOpenCodeTerminal()) {
+        createOpenCodeTerminal(context);
+        vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
+        return;
+      }
+
+      await sendExplorerSelection();
+    }
+  );
+
+  context.subscriptions.push(send, sendSelected);
 }
 
 export function deactivate() { }

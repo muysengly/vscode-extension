@@ -20,28 +20,21 @@
       {
         "command": "extension.send",
         "title": "Extension: Send File Line Range to OpenCode"
+      },
+      {
+        "command": "extension.sendSelected",
+        "title": "Extension: Send Selected File/Folder to OpenCode"
       }
     ],
     "keybindings": [
       {
         "key": "ctrl+o",
-        "command": "extension.send",
-        "args": {
-          "source": "editor"
-        },
-        "when": "editorTextFocus"
-      },
-      {
-        "key": "ctrl+o",
-        "command": "extension.send",
-        "args": {
-          "source": "explorer"
-        },
-        "when": "filesExplorerFocus"
-      },
-      {
-        "key": "ctrl+o",
         "command": "extension.send"
+      },
+      {
+        "key": "ctrl+o",
+        "command": "extension.sendSelected",
+        "when": "filesExplorerFocus"
       }
     ]
   },
