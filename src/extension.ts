@@ -66,14 +66,7 @@ async function isDirectory(uri: vscode.Uri): Promise<boolean> {
   }
 }
 
-async function sendExplorerSelection(): Promise<void> {
-  const uris = await getExplorerSelectionUris();
-
-  if (!uris.length) {
-    vscode.window.showWarningMessage("No file or folder selected.");
-    return;
-  }
-
+async function sendExplorerSelection(uris: vscode.Uri[]): Promise<void> {
   const refs: string[] = [];
 
   for (const uri of uris) {
@@ -110,6 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
 
     if (!editor) {
+      findOpenCodeTerminal()?.show();
       return;
     }
 
@@ -122,9 +116,15 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
+    const selection = editor.selection;
+
+    if (selection.isEmpty) {
+      findOpenCodeTerminal()?.show();
+      return;
+    }
+
     vscode.commands.executeCommand("workbench.action.files.saveAll");
 
-    const selection = editor.selection;
     const startLine = selection.start.line + 1;
     const endLine = selection.end.line + 1;
 
@@ -146,7 +146,14 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      await sendExplorerSelection();
+      const uris = await getExplorerSelectionUris();
+
+      if (!uris.length) {
+        findOpenCodeTerminal()?.show();
+        return;
+      }
+
+      await sendExplorerSelection(uris);
     }
   );
 

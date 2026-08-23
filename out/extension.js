@@ -54,12 +54,7 @@ async function isDirectory(uri) {
         return false;
     }
 }
-async function sendExplorerSelection() {
-    const uris = await getExplorerSelectionUris();
-    if (!uris.length) {
-        vscode.window.showWarningMessage("No file or folder selected.");
-        return;
-    }
+async function sendExplorerSelection(uris) {
     const refs = [];
     for (const uri of uris) {
         const file = toRelativePath(uri);
@@ -88,6 +83,7 @@ function activate(context) {
         }
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
+            findOpenCodeTerminal()?.show();
             return;
         }
         const document = editor.document;
@@ -95,8 +91,12 @@ function activate(context) {
             vscode.window.showWarningMessage("Cannot reference an unsaved file. Save it first.");
             return;
         }
-        vscode.commands.executeCommand("workbench.action.files.saveAll");
         const selection = editor.selection;
+        if (selection.isEmpty) {
+            findOpenCodeTerminal()?.show();
+            return;
+        }
+        vscode.commands.executeCommand("workbench.action.files.saveAll");
         const startLine = selection.start.line + 1;
         const endLine = selection.end.line + 1;
         const file = toRelativePath(document.uri);
@@ -110,7 +110,12 @@ function activate(context) {
             vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
             return;
         }
-        await sendExplorerSelection();
+        const uris = await getExplorerSelectionUris();
+        if (!uris.length) {
+            findOpenCodeTerminal()?.show();
+            return;
+        }
+        await sendExplorerSelection(uris);
     });
     context.subscriptions.push(send, sendSelected);
 }
