@@ -8,10 +8,11 @@ import * as vscode from "vscode";
 //   cursor on a line, NO chars selected → @file#L<line>   <-- cursor alone counts
 //   text selected                       → @file#L<start>-<end>
 //
-// Explorer focused (extension.sendSelected):
-//   file selected                       → @file
-//   folder selected                     → @folder/
-//   blank space                         → focus terminal + status message
+// Explorer focused:
+//   file(s)/folder(s) selected          → @file / @folder/   (sendSelected)
+//   blank space, nothing selected       → focus terminal + status message
+//                                         (explorerBlank — routed by keybinding,
+//                                          NOT detectable inside a command)
 //
 // Anywhere else (extension.focus):
 //                                       → focus / open the terminal
@@ -243,6 +244,16 @@ export function activate(context: vscode.ExtensionContext) {
       await sendExplorerSelection(uris);
     }),
 
+    // Ctrl+O in Explorer with nothing selected (blank space click clears
+    // both selection and focus → listHasSelectionOrFocus is false).
+    // Keybinding routes here BEFORE sendSelected can even try the clipboard,
+    // so no stale/fallback file can ever be sent.
+    vscode.commands.registerCommand("extension.explorerBlank", () => {
+      const terminal = findTerminal() ?? createTerminal(context);
+      terminal.show();
+      setStatus("OpenCode: no file selected, sent cursor only.");
+    }),
+
     // Ctrl+O anywhere else → just focus (or open) the terminal.
     vscode.commands.registerCommand("extension.focus", () => {
       const terminal = findTerminal() ?? createTerminal(context);
@@ -251,4 +262,4 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {}
+export function deactivate() { }

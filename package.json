@@ -26,6 +26,10 @@
         "title": "Extension: Send Selected File/Folder to OpenCode"
       },
       {
+        "command": "extension.explorerBlank",
+        "title": "Extension: Explorer Has No Selection"
+      },
+      {
         "command": "extension.focus",
         "title": "Extension: Focus OpenCode Terminal"
       }
@@ -42,8 +46,13 @@
       },
       {
         "key": "ctrl+o",
+        "command": "extension.explorerBlank",
+        "when": "filesExplorerFocus && !listHasSelectionOrFocus"
+      },
+      {
+        "key": "ctrl+o",
         "command": "extension.sendSelected",
-        "when": "filesExplorerFocus"
+        "when": "filesExplorerFocus && listHasSelectionOrFocus"
       }
     ]
   },
