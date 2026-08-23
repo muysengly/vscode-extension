@@ -25,20 +25,28 @@ function createOpenCodeTerminal(context) {
     terminal.sendText("opencode");
     return terminal;
 }
+const CLIPBOARD_SENTINEL = "__opencode_no_selection__";
 async function getExplorerSelectionUris() {
     const previous = await vscode.env.clipboard.readText();
-    await vscode.env.clipboard.writeText("");
+    await vscode.env.clipboard.writeText(CLIPBOARD_SENTINEL);
     try {
         await vscode.commands.executeCommand("copyFilePath");
         let raw = "";
-        for (let i = 0; i < 10 && !raw; i++) {
+        for (let i = 0; i < 10 && raw !== CLIPBOARD_SENTINEL; i++) {
             await new Promise((resolve) => setTimeout(resolve, 50));
             raw = (await vscode.env.clipboard.readText()).trim();
+            if (raw && raw !== CLIPBOARD_SENTINEL) {
+                break;
+            }
+        }
+        if (!raw || raw === CLIPBOARD_SENTINEL) {
+            return [];
         }
         return raw
             .split(/\r?\n/)
             .map((line) => line.trim())
             .filter(Boolean)
+            .filter((line) => line !== CLIPBOARD_SENTINEL)
             .map((p) => vscode.Uri.file(p));
     }
     finally {
