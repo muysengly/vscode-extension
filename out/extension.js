@@ -10,6 +10,7 @@ const vscode = require("vscode");
 // Editor focused (extension.send):
 //   cursor on a line, NO chars selected → @file#L<line>   <-- cursor alone counts
 //   text selected                       → @file#L<start>-<end>
+//   multiple cursors/selections         → one ref each, joined with spaces
 //
 // Explorer focused:
 //   file(s)/folder(s) selected          → @file / @folder/   (sendSelected)
@@ -66,27 +67,41 @@ function toRelativePath(uri) {
     return vscode.workspace.asRelativePath(uri, false).replace(/\\/g, "/");
 }
 // ----------------------------------------------------------------------------
-// BLOCK 3 — Editor reference (cursor line OR selection)
+// BLOCK 3 — Editor references (one per cursor / selection)
 // ----------------------------------------------------------------------------
-function getEditorReference(editor) {
+// Builds one "@file#L..." reference for EVERY cursor/selection.
+// Multiple cursors on the same line collapse into a single ref (deduped).
+function getEditorReferences(editor) {
     const file = toRelativePath(editor.document.uri);
-    const selection = editor.selection;
-    const startLine = selection.start.line + 1; // VSCode lines are 0-based
-    let endLine = selection.end.line + 1;
-    // Nothing selected → cursor only → ALWAYS the cursor's own line.
-    // e.g. cursor sitting on line 12 → "@src/app.ts#L12"
-    if (selection.isEmpty) {
-        return `@${file}#L${startLine}`;
+    const refs = [];
+    const seen = new Set();
+    for (const selection of editor.selections) {
+        const startLine = selection.start.line + 1; // VSCode lines are 0-based
+        let endLine = selection.end.line + 1;
+        // Nothing selected → cursor only → ALWAYS the cursor's own line.
+        // e.g. cursor sitting on line 12 → "@src/app.ts#L12"
+        let reference;
+        if (selection.isEmpty) {
+            reference = `@${file}#L${startLine}`;
+        }
+        else {
+            // Multi-line selection ending at column 0 really ends on the previous line.
+            if (selection.end.character === 0 && endLine > startLine) {
+                endLine -= 1;
+            }
+            // One line selected  → "@src/app.ts#L5"
+            // Several lines      → "@src/app.ts#L5-L9"
+            reference =
+                startLine === endLine
+                    ? `@${file}#L${startLine}`
+                    : `@${file}#L${startLine}-${endLine}`;
+        }
+        if (!seen.has(reference)) {
+            seen.add(reference);
+            refs.push(reference);
+        }
     }
-    // Multi-line selection ending at column 0 really ends on the previous line.
-    if (selection.end.character === 0 && endLine > startLine) {
-        endLine -= 1;
-    }
-    // One line selected  → "@src/app.ts#L5"
-    // Several lines      → "@src/app.ts#L5-L9"
-    return startLine === endLine
-        ? `@${file}#L${startLine}`
-        : `@${file}#L${startLine}-${endLine}`;
+    return refs;
 }
 function sendEditorReference() {
     const editor = vscode.window.activeTextEditor;
@@ -101,8 +116,8 @@ function sendEditorReference() {
         return;
     }
     void vscode.commands.executeCommand("workbench.action.files.saveAll");
-    const reference = getEditorReference(editor);
-    sendToTerminal(reference);
+    const references = getEditorReferences(editor);
+    sendToTerminal(references.join(" "));
 }
 // ----------------------------------------------------------------------------
 // BLOCK 4 — Explorer selection (clipboard round-trip)
