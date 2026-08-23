@@ -25,13 +25,6 @@ function createOpenCodeTerminal(context) {
     terminal.sendText("opencode");
     return terminal;
 }
-function openOpenCodeTerminal(context) {
-    const existing = findOpenCodeTerminal();
-    if (existing) {
-        existing.dispose();
-    }
-    return createOpenCodeTerminal(context);
-}
 function sendToTerminal(text, message) {
     const terminal = findOpenCodeTerminal();
     if (!terminal) {
@@ -43,9 +36,6 @@ function sendToTerminal(text, message) {
     vscode.window.setStatusBarMessage(message, 3000);
 }
 function activate(context) {
-    const open = vscode.commands.registerCommand("extension.open", () => {
-        openOpenCodeTerminal(context);
-    });
     const send = vscode.commands.registerCommand("extension.send", () => {
         if (!findOpenCodeTerminal()) {
             createOpenCodeTerminal(context);
@@ -61,6 +51,7 @@ function activate(context) {
             vscode.window.showWarningMessage("Cannot reference an unsaved file. Save it first.");
             return;
         }
+        vscode.commands.executeCommand("workbench.action.files.saveAll");
         const selection = editor.selection;
         const startLine = selection.start.line + 1;
         const endLine = selection.end.line + 1;
@@ -69,7 +60,7 @@ function activate(context) {
         const reference = `@${file}#${range}`;
         sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
     });
-    context.subscriptions.push(open, send);
+    context.subscriptions.push(send);
 }
 function deactivate() { }
 //# sourceMappingURL=extension.js.map

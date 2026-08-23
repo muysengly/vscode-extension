@@ -34,16 +34,6 @@ function createOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Termin
   return terminal;
 }
 
-function openOpenCodeTerminal(context: vscode.ExtensionContext): vscode.Terminal {
-  const existing = findOpenCodeTerminal();
-
-  if (existing) {
-    existing.dispose();
-  }
-
-  return createOpenCodeTerminal(context);
-}
-
 function sendToTerminal(text: string, message: string): void {
   const terminal = findOpenCodeTerminal();
 
@@ -58,10 +48,6 @@ function sendToTerminal(text: string, message: string): void {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const open = vscode.commands.registerCommand("extension.open", () => {
-    openOpenCodeTerminal(context);
-  });
-
   const send = vscode.commands.registerCommand("extension.send", () => {
     if (!findOpenCodeTerminal()) {
       createOpenCodeTerminal(context);
@@ -99,7 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
     sendToTerminal(reference, `OpenCode reference sent: ${reference}`);
   });
 
-  context.subscriptions.push(open, send);
+  context.subscriptions.push(send);
 }
 
 export function deactivate() { }
