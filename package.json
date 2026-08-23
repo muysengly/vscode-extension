@@ -24,12 +24,21 @@
       {
         "command": "extension.sendSelected",
         "title": "Extension: Send Selected File/Folder to OpenCode"
+      },
+      {
+        "command": "extension.focus",
+        "title": "Extension: Focus OpenCode Terminal"
       }
     ],
     "keybindings": [
       {
         "key": "ctrl+o",
-        "command": "extension.send"
+        "command": "extension.focus"
+      },
+      {
+        "key": "ctrl+o",
+        "command": "extension.send",
+        "when": "editorTextFocus"
       },
       {
         "key": "ctrl+o",

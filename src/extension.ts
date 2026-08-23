@@ -157,7 +157,19 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(send, sendSelected);
+  const focus = vscode.commands.registerCommand("extension.focus", () => {
+    const existing = findOpenCodeTerminal();
+
+    if (existing) {
+      existing.show();
+      return;
+    }
+
+    createOpenCodeTerminal(context);
+    vscode.window.setStatusBarMessage("OpenCode terminal opened.", 3000);
+  });
+
+  context.subscriptions.push(send, sendSelected, focus);
 }
 
 export function deactivate() { }
