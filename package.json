@@ -56,7 +56,8 @@
     "keybindings": [
       {
         "key": "ctrl+'",
-        "command": "extension.focus"
+        "command": "extension.focus",
+        "when": "!editorTextFocus && !filesExplorerFocus"
       },
       {
         "key": "ctrl+'",
