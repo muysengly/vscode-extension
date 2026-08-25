@@ -251,6 +251,14 @@ function sendToTerminal(text: string): void {
 // ----------------------------------------------------------------------------
 
 export function activate(context: vscode.ExtensionContext) {
+  // Restart opencode on every VSCode reload
+  const existing = findTerminal();
+  if (existing) {
+    existing.dispose();
+  }
+  createTerminal(context);
+  setStatus("OpenCode restarted.");
+
   context.subscriptions.push(
     // Ctrl+' while typing in an editor.
     vscode.commands.registerCommand("extension.send", () => {

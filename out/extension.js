@@ -203,6 +203,13 @@ function sendToTerminal(text) {
 // BLOCK 6 — Commands (keybindings live in package.json)
 // ----------------------------------------------------------------------------
 function activate(context) {
+    // Restart opencode on every VSCode reload
+    const existing = findTerminal();
+    if (existing) {
+        existing.dispose();
+    }
+    createTerminal(context);
+    setStatus("OpenCode restarted.");
     context.subscriptions.push(
     // Ctrl+' while typing in an editor.
     vscode.commands.registerCommand("extension.send", () => {
