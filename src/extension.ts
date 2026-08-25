@@ -71,7 +71,9 @@ function createTerminal(
     shellPath: path.join(
       process.env.windir ?? "C:\\Windows",
       "System32",
-      "cmd.exe"
+      "WindowsPowerShell",
+      "v1.0",
+      "powershell.exe"
     ),
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
     iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
@@ -171,7 +173,7 @@ function sendEditorReference(): void {
   void vscode.commands.executeCommand("workbench.action.files.saveAll");
 
   const references = getEditorReferences(editor);
-  sendToTerminal(references.join(" "));
+  copyToClipboardAndFocus(references.join(" "));
 }
 
 // ----------------------------------------------------------------------------
@@ -247,36 +249,19 @@ async function sendExplorerSelection(uris: vscode.Uri[]): Promise<void> {
     refs.push((await isDirectory(uri)) ? `@${file}/` : `@${file}`);
   }
 
-  sendToTerminal(refs.join(" "));
+  copyToClipboardAndFocus(refs.join(" "));
 }
 
 // ----------------------------------------------------------------------------
-// BLOCK 5 — Send to terminal
+// BLOCK 5 — Copy reference to clipboard, then focus OpenCode
 // ----------------------------------------------------------------------------
 
-// Bracketed-paste codes (\x1b[200~ ... \x1b[201~) insert the text literally
-// instead of letting the shell execute each line as it arrives.
-function sendToTerminal(text: string): void {
-  const terminal = findTerminal();
-
-  if (!terminal) {
-    vscode.window.showWarningMessage("OpenCode terminal is not active.");
-    return;
-  }
-
-  terminal.show();
-
-  if (!opencodeStarted) {
-    terminal.sendText("opencode");
-    opencodeStarted = true;
-    setTimeout(() => {
-      terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
-    }, 500);
-  } else {
-    terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
-  }
-
-  setStatus(`OpenCode reference sent: ${text}`);
+// Instead of auto-sending to the terminal, put the reference on the clipboard
+// and focus the OpenCode window so the user can paste (Ctrl+V) at the cursor.
+function copyToClipboardAndFocus(text: string): void {
+  void vscode.env.clipboard.writeText(text);
+  findTerminal()?.show();
+  setStatus(`OpenCode reference copied — paste into OpenCode (Ctrl+V).`);
 }
 
 // ----------------------------------------------------------------------------

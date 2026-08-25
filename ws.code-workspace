@@ -9,5 +9,6 @@
     // Terminal, so closing terminals can't kill it and log:
     // "PowerShell process terminated or Extension Terminal was closed"
     "powershell.integratedConsole.startInBackground": true,
+    "python.terminal.activateEnvironment": false,
   },
 }
