@@ -280,6 +280,14 @@ export function activate(context: vscode.ExtensionContext) {
     );
   }
 
+  // Dispose stale terminal and start fresh with --resume on reload/restart.
+  const existing = findTerminal();
+  if (existing) {
+    existing.dispose();
+  }
+  opencodeStarted = false;
+  createTerminal(context, true, true);
+
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startOpenCode", () => {
       const existing = findTerminal();

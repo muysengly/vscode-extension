@@ -221,6 +221,13 @@ function activate(context) {
     if (pythonConfig.get("activateEnvironment") !== false) {
         pythonConfig.update("activateEnvironment", false, vscode.ConfigurationTarget.Workspace);
     }
+    // Dispose stale terminal and start fresh with --resume on reload/restart.
+    const existing = findTerminal();
+    if (existing) {
+        existing.dispose();
+    }
+    opencodeStarted = false;
+    createTerminal(context, true, true);
     context.subscriptions.push(vscode.commands.registerCommand("extension.startOpenCode", () => {
         const existing = findTerminal();
         if (existing) {
