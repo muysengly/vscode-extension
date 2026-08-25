@@ -29,17 +29,25 @@ const TERMINAL_NAME = "OpenCode";
 // without needing Set-ExecutionPolicy / Activate.ps1 activation.
 const VENV_ROOT = "c:\\Users\\muysengly\\Desktop\\sm_system\\server\\.venv";
 
+let opencodeStarted = false;
+
 function findTerminal(): vscode.Terminal | undefined {
   return vscode.window.terminals.find(
     (t) => t.name === TERMINAL_NAME || t.name.startsWith(TERMINAL_NAME)
   );
 }
 
-function createTerminal(context: vscode.ExtensionContext): vscode.Terminal {
-  const existing = findTerminal();
-  if (existing) {
-    existing.show();
-    return existing;
+function createTerminal(
+  context: vscode.ExtensionContext,
+  forceNew = false
+): vscode.Terminal {
+  if (!forceNew) {
+    const existing = findTerminal();
+    if (existing) {
+      existing.show();
+      opencodeStarted = true;
+      return existing;
+    }
   }
 
   const terminal = vscode.window.createTerminal({
@@ -58,13 +66,16 @@ function createTerminal(context: vscode.ExtensionContext): vscode.Terminal {
 
   terminal.show();
   terminal.sendText("opencode");
+  opencodeStarted = true;
   return terminal;
 }
 
 // Returns true when the terminal already existed.
-// First-ever Ctrl+' only opens the terminal and sends nothing.
+// Always ensures opencode is running in the terminal.
 function ensureTerminal(context: vscode.ExtensionContext): boolean {
-  if (findTerminal()) {
+  const existing = findTerminal();
+  if (existing) {
+    existing.show();
     return true;
   }
   createTerminal(context);
@@ -242,7 +253,17 @@ function sendToTerminal(text: string): void {
   }
 
   terminal.show();
-  terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
+
+  if (!opencodeStarted) {
+    terminal.sendText("opencode");
+    opencodeStarted = true;
+    setTimeout(() => {
+      terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
+    }, 500);
+  } else {
+    terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
+  }
+
   setStatus(`OpenCode reference sent: ${text}`);
 }
 
@@ -256,7 +277,8 @@ export function activate(context: vscode.ExtensionContext) {
   if (existing) {
     existing.dispose();
   }
-  createTerminal(context);
+  opencodeStarted = false;
+  createTerminal(context, true);
   setStatus("OpenCode restarted.");
 
   context.subscriptions.push(
