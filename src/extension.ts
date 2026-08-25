@@ -54,8 +54,7 @@ function findTerminal(): vscode.Terminal | undefined {
 
 function createTerminal(
   context: vscode.ExtensionContext,
-  forceNew = false,
-  resume = false
+  forceNew = false
 ): vscode.Terminal {
   if (!forceNew) {
     const existing = findTerminal();
@@ -80,7 +79,7 @@ function createTerminal(
   });
 
   terminal.show();
-  terminal.sendText(resume ? "opencode --resume" : "opencode");
+  terminal.sendText("opencode");
   opencodeStarted = true;
   return terminal;
 }
@@ -286,7 +285,7 @@ export function activate(context: vscode.ExtensionContext) {
     existing.dispose();
   }
   opencodeStarted = false;
-  createTerminal(context, true, true);
+  createTerminal(context, true);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startOpenCode", () => {
@@ -294,7 +293,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (existing) {
         existing.dispose();
       }
-      createTerminal(context, true, false);
+createTerminal(context, true);
       setStatus("OpenCode: started.");
     }),
 
