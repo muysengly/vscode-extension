@@ -293,7 +293,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (existing) {
         existing.dispose();
       }
-createTerminal(context, true);
+      createTerminal(context, true);
       setStatus("OpenCode: started.");
     }),
 
@@ -303,21 +303,37 @@ createTerminal(context, true);
       sendEditorReference();
     }),
 
-    // Ctrl+' while the Explorer sidebar has focus.
-    vscode.commands.registerCommand("extension.sendSelected", async () => {
-      if (!ensureTerminal(context)) return;
+    // Explorer selection: context menu passes the right-clicked uri plus all
+    // selected uris directly (reliable for folders). Ctrl+' passes nothing,
+    // so we fall back to the clipboard probe.
+    vscode.commands.registerCommand(
+      "extension.sendSelected",
+      async (item?: vscode.Uri, items?: vscode.Uri[]) => {
+        if (!ensureTerminal(context)) return;
 
-      const uris = await getExplorerSelectionUris();
+        let uris: vscode.Uri[];
+        if (item instanceof vscode.Uri) {
+          const selected = Array.isArray(items)
+            ? items.filter((u): u is vscode.Uri => u instanceof vscode.Uri)
+            : [];
+          // Right-click on an unselected row → prepend it to the selection.
+          uris = selected.some((u) => u.toString() === item.toString())
+            ? selected
+            : [item, ...selected];
+        } else {
+          uris = await getExplorerSelectionUris();
+        }
 
-      // Blank space in explorer → focus terminal only, no reference sent.
-      if (!uris.length) {
-        findTerminal()?.show();
-        setStatus("OpenCode: no file selected.");
-        return;
+        // Blank space in explorer → focus terminal only, no reference sent.
+        if (!uris.length) {
+          findTerminal()?.show();
+          setStatus("OpenCode: no file selected.");
+          return;
+        }
+
+        await sendExplorerSelection(uris);
       }
-
-      await sendExplorerSelection(uris);
-    }),
+    ),
 
     vscode.commands.registerCommand("extension.explorerBlank", () => {
       const terminal = findTerminal() ?? createTerminal(context);

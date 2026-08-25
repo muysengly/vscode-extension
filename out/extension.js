@@ -242,11 +242,25 @@ function activate(context) {
             return;
         sendEditorReference();
     }), 
-    // Ctrl+' while the Explorer sidebar has focus.
-    vscode.commands.registerCommand("extension.sendSelected", async () => {
+    // Explorer selection: context menu passes the right-clicked uri plus all
+    // selected uris directly (reliable for folders). Ctrl+' passes nothing,
+    // so we fall back to the clipboard probe.
+    vscode.commands.registerCommand("extension.sendSelected", async (item, items) => {
         if (!ensureTerminal(context))
             return;
-        const uris = await getExplorerSelectionUris();
+        let uris;
+        if (item instanceof vscode.Uri) {
+            const selected = Array.isArray(items)
+                ? items.filter((u) => u instanceof vscode.Uri)
+                : [];
+            // Right-click on an unselected row → prepend it to the selection.
+            uris = selected.some((u) => u.toString() === item.toString())
+                ? selected
+                : [item, ...selected];
+        }
+        else {
+            uris = await getExplorerSelectionUris();
+        }
         // Blank space in explorer → focus terminal only, no reference sent.
         if (!uris.length) {
             findTerminal()?.show();
