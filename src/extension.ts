@@ -69,11 +69,10 @@ function createTerminal(
   const terminal = vscode.window.createTerminal({
     name: TERMINAL_NAME,
     shellPath: path.join(
-      process.env.windir ?? "C:\\Windows",
-      "System32",
-      "WindowsPowerShell",
-      "v1.0",
-      "powershell.exe"
+      "C:\\Program Files",
+      "PowerShell",
+      "7",
+      "pwsh.exe"
     ),
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
     iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
