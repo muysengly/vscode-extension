@@ -11,3 +11,5 @@ setup.ps1
 .hintrc
 ws.code-workspace
 *.vsix
+.vscode/
+AGENTS.md
