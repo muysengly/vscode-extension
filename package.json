@@ -78,7 +78,7 @@
     "menus": {
       "editor/context": [
         {
-          "when": "editorHasSelection",
+          "when": "editorTextFocus",
           "command": "extension.send",
           "group": "navigation@1"
         }
