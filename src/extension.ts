@@ -25,8 +25,8 @@ import * as vscode from "vscode";
 
 const TERMINAL_NAME = "OpenCode";
 
-// Preloaded into every OpenCode terminal so Python resolves to this venv
-// without manually running Set-ExecutionPolicy / Activate.ps1 first.
+// Venv's Scripts dir is prepended to PATH so Python resolves to this venv
+// without needing Set-ExecutionPolicy / Activate.ps1 activation.
 const VENV_ROOT = "c:\\Users\\muysengly\\Desktop\\sm_system\\server\\.venv";
 
 function findTerminal(): vscode.Terminal | undefined {
@@ -52,7 +52,6 @@ function createTerminal(context: vscode.ExtensionContext): vscode.Terminal {
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
     iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
     env: {
-      VIRTUAL_ENV: VENV_ROOT,
       PATH: `${VENV_ROOT}\\Scripts;${process.env.PATH ?? ""}`,
     },
   });
