@@ -305,12 +305,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Explorer selection: context menu passes the right-clicked uri plus all
     // selected uris directly (reliable for folders). Ctrl+' passes nothing,
-    // so we fall back to the clipboard probe.
+    // so we fall back to the clipboard probe — which MUST run while the
+    // explorer still has focus, i.e. BEFORE the terminal is shown.
     vscode.commands.registerCommand(
       "extension.sendSelected",
       async (item?: vscode.Uri, items?: vscode.Uri[]) => {
-        if (!ensureTerminal(context)) return;
-
         let uris: vscode.Uri[];
         if (item instanceof vscode.Uri) {
           const selected = Array.isArray(items)
@@ -331,6 +330,7 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
 
+        if (!ensureTerminal(context)) return;
         await sendExplorerSelection(uris);
       }
     ),

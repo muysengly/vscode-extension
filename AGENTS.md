@@ -27,3 +27,5 @@ Press **Ctrl+'** to send file/line references from VS Code to the OpenCode termi
 - Indent the reference when it is sent into the terminal.
 - Prefer the Explorer right-click context menu ("Send to OpenCode") for file/folder refs —
   most reliable path; Ctrl+' keybinding is the fallback.
+- If you are not sure what to do (ambiguous request, missing info, multiple valid approaches),
+  ask me before acting — do not guess.

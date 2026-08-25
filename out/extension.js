@@ -244,10 +244,9 @@ function activate(context) {
     }), 
     // Explorer selection: context menu passes the right-clicked uri plus all
     // selected uris directly (reliable for folders). Ctrl+' passes nothing,
-    // so we fall back to the clipboard probe.
+    // so we fall back to the clipboard probe — which MUST run while the
+    // explorer still has focus, i.e. BEFORE the terminal is shown.
     vscode.commands.registerCommand("extension.sendSelected", async (item, items) => {
-        if (!ensureTerminal(context))
-            return;
         let uris;
         if (item instanceof vscode.Uri) {
             const selected = Array.isArray(items)
@@ -267,6 +266,8 @@ function activate(context) {
             setStatus("OpenCode: no file selected.");
             return;
         }
+        if (!ensureTerminal(context))
+            return;
         await sendExplorerSelection(uris);
     }), vscode.commands.registerCommand("extension.explorerBlank", () => {
         const terminal = findTerminal() ?? createTerminal(context);
