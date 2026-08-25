@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
+const fs = require("fs");
 const path = require("path");
 const vscode = require("vscode");
 // ============================================================================
@@ -25,9 +26,29 @@ const vscode = require("vscode");
 // BLOCK 1 — Terminal management
 // ----------------------------------------------------------------------------
 const TERMINAL_NAME = "OpenCode";
-// Venv's Scripts dir is prepended to PATH so Python resolves to this venv
-// without needing Set-ExecutionPolicy / Activate.ps1 activation.
-const VENV_ROOT = "c:\\Users\\muysengly\\Desktop\\sm_system\\server\\.venv";
+function getVenvPath() {
+    const config = vscode.workspace.getConfiguration("opencode");
+    const configured = config.get("venvPath", "").trim();
+    if (configured)
+        return configured;
+    // Auto-detect: look for .venv in any workspace folder
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    for (const folder of folders) {
+        const candidate = path.join(folder.uri.fsPath, ".venv");
+        if (fs.existsSync(candidate))
+            return candidate;
+    }
+    return undefined;
+}
+function getEnvWithVenv() {
+    const venv = getVenvPath();
+    if (!venv)
+        return {};
+    const scriptsDir = process.platform === "win32"
+        ? path.join(venv, "Scripts")
+        : path.join(venv, "bin");
+    return { PATH: `${scriptsDir};${process.env.PATH ?? ""}` };
+}
 let opencodeStarted = false;
 function findTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME || t.name.startsWith(TERMINAL_NAME));
@@ -46,17 +67,13 @@ function createTerminal(context, forceNew = false, resume = false) {
         shellPath: path.join(process.env.windir ?? "C:\\Windows", "System32", "cmd.exe"),
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
         iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
-        env: {
-            PATH: `${VENV_ROOT}\\Scripts;${process.env.PATH ?? ""}`,
-        },
+        env: getEnvWithVenv(),
     });
     terminal.show();
     terminal.sendText(resume ? "opencode --resume" : "opencode");
     opencodeStarted = true;
     return terminal;
 }
-// Returns true when the terminal already existed.
-// Always ensures opencode is running in the terminal.
 function ensureTerminal(context) {
     const existing = findTerminal();
     if (existing) {
@@ -219,15 +236,26 @@ function sendToTerminal(text) {
 // BLOCK 6 — Commands (keybindings live in package.json)
 // ----------------------------------------------------------------------------
 function activate(context) {
-    // Restart opencode on every VSCode reload
+    // If terminal already exists, just keep it — don't kill/restart.
+    // User can manually resume via command palette if needed.
     const existing = findTerminal();
     if (existing) {
-        existing.dispose();
+        existing.show();
+        opencodeStarted = true;
+        setStatus("OpenCode: reusing existing terminal.");
     }
-    opencodeStarted = false;
-    createTerminal(context, true, true);
-    setStatus("OpenCode resumed last session.");
-    context.subscriptions.push(
+    context.subscriptions.push(vscode.commands.registerCommand("extension.startOpenCode", () => {
+        const existing = findTerminal();
+        if (existing) {
+            existing.sendText("opencode --resume");
+            existing.show();
+            opencodeStarted = true;
+            setStatus("OpenCode: resumed.");
+            return;
+        }
+        createTerminal(context, true, true);
+        setStatus("OpenCode: started.");
+    }), 
     // Ctrl+' while typing in an editor.
     vscode.commands.registerCommand("extension.send", () => {
         if (!ensureTerminal(context))
@@ -246,12 +274,7 @@ function activate(context) {
             return;
         }
         await sendExplorerSelection(uris);
-    }), 
-    // Ctrl+' in Explorer with nothing selected (blank space click clears
-    // both selection and focus → listHasSelectionOrFocus is false).
-    // Keybinding routes here BEFORE sendSelected can even try the clipboard,
-    // so no stale/fallback file can ever be sent.
-    vscode.commands.registerCommand("extension.explorerBlank", () => {
+    }), vscode.commands.registerCommand("extension.explorerBlank", () => {
         const terminal = findTerminal() ?? createTerminal(context);
         terminal.show();
         setStatus("OpenCode: no file selected, sent cursor only.");
