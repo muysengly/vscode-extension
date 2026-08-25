@@ -40,13 +40,7 @@
     ],
     "configuration": {
       "title": "OpenCode",
-      "properties": {
-        "opencode.venvPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to your Python .venv folder. If empty, auto-detects .venv in the workspace root."
-        }
-      }
+      "properties": {}
     },
     "keybindings": [
       {

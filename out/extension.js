@@ -25,22 +25,6 @@ const vscode = require("vscode");
 // BLOCK 1 — Terminal management
 // ----------------------------------------------------------------------------
 const TERMINAL_NAME = "OpenCode";
-function getVenvPath() {
-    const config = vscode.workspace.getConfiguration("opencode");
-    const configured = config.get("venvPath", "").trim();
-    if (configured)
-        return configured;
-    return undefined;
-}
-function getEnvWithVenv() {
-    const venv = getVenvPath();
-    if (!venv)
-        return {};
-    const scriptsDir = process.platform === "win32"
-        ? path.join(venv, "Scripts")
-        : path.join(venv, "bin");
-    return { PATH: `${scriptsDir};${process.env.PATH ?? ""}` };
-}
 let opencodeStarted = false;
 function findTerminal() {
     return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME || t.name.startsWith(TERMINAL_NAME));
@@ -62,7 +46,6 @@ function createTerminal(context, forceNew = false) {
         shellPath: path.join("C:\\Program Files", "PowerShell", "7", "pwsh.exe"),
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
         iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
-        env: getEnvWithVenv(),
         hideFromUser: true,
     });
     terminal.show();

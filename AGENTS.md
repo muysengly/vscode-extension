@@ -8,8 +8,6 @@ Press **Ctrl+'** to send file/line references from VS Code to the OpenCode termi
   (pwsh 7 at `C:\Program Files\PowerShell\7\pwsh.exe`, cwd = first workspace folder),
   which auto-runs `opencode`.
 - `extension.startOpenCode` does a full restart the same way (dispose + recreate).
-- `opencode.venvPath` setting (optional): prepends `<venv>/Scripts` (win32) or
-  `<venv>/bin` to the terminal's PATH env.
 - The OpenCode terminal is created `hideFromUser: true` and shown immediately —
   the Python extension skips hidden terminals, so it never injects venv activation
   into THIS terminal; all other terminals keep normal auto-activation.
@@ -74,5 +72,7 @@ otherwise → focus/open the terminal.
   the next Ctrl+' sends it.
 - Prefer the Explorer right-click context menu ("Send to OpenCode") for file/folder
   refs — most reliable path; Ctrl+' keybinding is the fallback.
+- NEVER run compile/build or npm install — the user runs `setup.ps1` themselves.
+  Just edit source; skip tsc, npm install, vsce package, etc.
 - If you are not sure what to do (ambiguous request, missing info, multiple valid
   approaches), ask me before acting — do not guess.

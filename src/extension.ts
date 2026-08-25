@@ -25,25 +25,6 @@ import * as vscode from "vscode";
 
 const TERMINAL_NAME = "OpenCode";
 
-function getVenvPath(): string | undefined {
-  const config = vscode.workspace.getConfiguration("opencode");
-  const configured = config.get<string>("venvPath", "").trim();
-  if (configured) return configured;
-  return undefined;
-}
-
-function getEnvWithVenv(): Record<string, string> {
-  const venv = getVenvPath();
-  if (!venv) return {};
-
-  const scriptsDir =
-    process.platform === "win32"
-      ? path.join(venv, "Scripts")
-      : path.join(venv, "bin");
-
-  return { PATH: `${scriptsDir};${process.env.PATH ?? ""}` };
-}
-
 let opencodeStarted = false;
 
 function findTerminal(): vscode.Terminal | undefined {
@@ -78,7 +59,6 @@ function createTerminal(
     ),
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
     iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
-    env: getEnvWithVenv(),
     hideFromUser: true,
   });
 
