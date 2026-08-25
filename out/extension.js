@@ -29,9 +29,14 @@ const TERMINAL_NAME = "OpenCode";
 // without manually running Set-ExecutionPolicy / Activate.ps1 first.
 const VENV_ROOT = "c:\\Users\\muysengly\\Desktop\\sm_system\\server\\.venv";
 function findTerminal() {
-    return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
+    return vscode.window.terminals.find((t) => t.name === TERMINAL_NAME || t.name.startsWith(TERMINAL_NAME));
 }
 function createTerminal(context) {
+    const existing = findTerminal();
+    if (existing) {
+        existing.show();
+        return existing;
+    }
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
         shellPath: path.join(process.env.windir ?? "C:\\Windows", "System32", "cmd.exe"),
@@ -43,7 +48,7 @@ function createTerminal(context) {
         },
     });
     terminal.show();
-    terminal.sendText("opencode"); // launch opencode inside it
+    terminal.sendText("opencode");
     return terminal;
 }
 // Returns true when the terminal already existed.
