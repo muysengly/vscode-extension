@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 
@@ -30,14 +29,6 @@ function getVenvPath(): string | undefined {
   const config = vscode.workspace.getConfiguration("opencode");
   const configured = config.get<string>("venvPath", "").trim();
   if (configured) return configured;
-
-  // Auto-detect: look for .venv in any workspace folder
-  const folders = vscode.workspace.workspaceFolders ?? [];
-  for (const folder of folders) {
-    const candidate = path.join(folder.uri.fsPath, ".venv");
-    if (fs.existsSync(candidate)) return candidate;
-  }
-
   return undefined;
 }
 
@@ -293,26 +284,31 @@ function sendToTerminal(text: string): void {
 // ----------------------------------------------------------------------------
 
 export function activate(context: vscode.ExtensionContext) {
-  // If terminal already exists, just keep it — don't kill/restart.
-  // User can manually resume via command palette if needed.
+  // Prevent the Python extension from injecting venv activation into our terminal.
+  const pythonConfig = vscode.workspace.getConfiguration("python.terminal");
+  if (pythonConfig.get<boolean>("activateEnvironment") !== false) {
+    pythonConfig.update(
+      "activateEnvironment",
+      false,
+      vscode.ConfigurationTarget.Workspace
+    );
+  }
+
   const existing = findTerminal();
   if (existing) {
-    existing.show();
-    opencodeStarted = true;
-    setStatus("OpenCode: reusing existing terminal.");
+    existing.dispose();
   }
+  opencodeStarted = false;
+  createTerminal(context, true, false);
+  setStatus("OpenCode: started.");
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startOpenCode", () => {
       const existing = findTerminal();
       if (existing) {
-        existing.sendText("opencode --resume");
-        existing.show();
-        opencodeStarted = true;
-        setStatus("OpenCode: resumed.");
-        return;
+        existing.dispose();
       }
-      createTerminal(context, true, true);
+      createTerminal(context, true, false);
       setStatus("OpenCode: started.");
     }),
 

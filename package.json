@@ -45,6 +45,11 @@
           "type": "string",
           "default": "",
           "description": "Path to your Python .venv folder. If empty, auto-detects .venv in the workspace root."
+        },
+        "python.terminal.activateEnvironment": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prevents the Python extension from injecting venv activation into OpenCode terminals."
         }
       }
     },

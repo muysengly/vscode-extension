@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
-const fs = require("fs");
 const path = require("path");
 const vscode = require("vscode");
 // ============================================================================
@@ -31,13 +30,6 @@ function getVenvPath() {
     const configured = config.get("venvPath", "").trim();
     if (configured)
         return configured;
-    // Auto-detect: look for .venv in any workspace folder
-    const folders = vscode.workspace.workspaceFolders ?? [];
-    for (const folder of folders) {
-        const candidate = path.join(folder.uri.fsPath, ".venv");
-        if (fs.existsSync(candidate))
-            return candidate;
-    }
     return undefined;
 }
 function getEnvWithVenv() {
@@ -236,24 +228,24 @@ function sendToTerminal(text) {
 // BLOCK 6 — Commands (keybindings live in package.json)
 // ----------------------------------------------------------------------------
 function activate(context) {
-    // If terminal already exists, just keep it — don't kill/restart.
-    // User can manually resume via command palette if needed.
+    // Prevent the Python extension from injecting venv activation into our terminal.
+    const pythonConfig = vscode.workspace.getConfiguration("python.terminal");
+    if (pythonConfig.get("activateEnvironment") !== false) {
+        pythonConfig.update("activateEnvironment", false, vscode.ConfigurationTarget.Workspace);
+    }
     const existing = findTerminal();
     if (existing) {
-        existing.show();
-        opencodeStarted = true;
-        setStatus("OpenCode: reusing existing terminal.");
+        existing.dispose();
     }
+    opencodeStarted = false;
+    createTerminal(context, true, false);
+    setStatus("OpenCode: started.");
     context.subscriptions.push(vscode.commands.registerCommand("extension.startOpenCode", () => {
         const existing = findTerminal();
         if (existing) {
-            existing.sendText("opencode --resume");
-            existing.show();
-            opencodeStarted = true;
-            setStatus("OpenCode: resumed.");
-            return;
+            existing.dispose();
         }
-        createTerminal(context, true, true);
+        createTerminal(context, true, false);
         setStatus("OpenCode: started.");
     }), 
     // Ctrl+' while typing in an editor.
