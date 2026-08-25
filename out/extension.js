@@ -208,7 +208,7 @@ function copyToClipboardAndFocus(text) {
     const terminal = findTerminal();
     if (terminal) {
         terminal.show();
-        terminal.sendText(`\x1b[200~${text}\x1b[201~`, false);
+        terminal.sendText(`\x1b[200~${text}\n\x1b[201~`, false);
         setStatus(`OpenCode reference sent.`);
     }
 }
@@ -222,12 +222,11 @@ function activate(context) {
         pythonConfig.update("activateEnvironment", false, vscode.ConfigurationTarget.Workspace);
     }
     const existing = findTerminal();
-    if (existing) {
-        existing.dispose();
+    if (!existing) {
+        opencodeStarted = false;
+        createTerminal(context);
+        setStatus("OpenCode: started.");
     }
-    opencodeStarted = false;
-    createTerminal(context, true, false);
-    setStatus("OpenCode: started.");
     context.subscriptions.push(vscode.commands.registerCommand("extension.startOpenCode", () => {
         const existing = findTerminal();
         if (existing) {
