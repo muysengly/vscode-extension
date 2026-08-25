@@ -1,5 +1,5 @@
 # បង្កើតកញ្ចប់ VSIX ពី extension (Build the VSIX package)
-# npm install
+npm install
 
 # បង្កើតកញ្ចប់ VSIX ពី extension (Build the VSIX package)
 npm run package

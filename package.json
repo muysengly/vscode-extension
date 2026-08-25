@@ -19,19 +19,19 @@
     "commands": [
       {
         "command": "extension.send",
-        "title": "Extension: Send Cursor Line or Selection to OpenCode"
+        "title": "Send Selection to OpenCode"
       },
       {
         "command": "extension.sendSelected",
-        "title": "Extension: Send Selected File/Folder to OpenCode"
+        "title": "Send to OpenCode"
       },
       {
         "command": "extension.explorerBlank",
-        "title": "Extension: Explorer Has No Selection"
+        "title": "OpenCode: Explorer Has No Selection"
       },
       {
         "command": "extension.focus",
-        "title": "Extension: Focus OpenCode Terminal"
+        "title": "OpenCode: Focus Terminal"
       },
       {
         "command": "extension.startOpenCode",
@@ -74,7 +74,23 @@
         "command": "extension.sendSelected",
         "when": "filesExplorerFocus && listHasSelectionOrFocus"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "extension.send",
+          "group": "navigation@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "explorerResourceIsFolder || listHasSelectionOrFocus",
+          "command": "extension.sendSelected",
+          "group": "navigation@1"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
