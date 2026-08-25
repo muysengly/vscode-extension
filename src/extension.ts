@@ -65,6 +65,9 @@ function createTerminal(
     }
   }
 
+  // hideFromUser makes the Python extension skip injecting venv activation
+  // into THIS terminal (it ignores hidden terminals); we show it right away,
+  // so all other terminals keep their normal auto-activation.
   const terminal = vscode.window.createTerminal({
     name: TERMINAL_NAME,
     shellPath: path.join(
@@ -76,6 +79,7 @@ function createTerminal(
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
     iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
     env: getEnvWithVenv(),
+    hideFromUser: true,
   });
 
   terminal.show();
@@ -269,16 +273,6 @@ function copyToClipboardAndFocus(text: string): void {
 // ----------------------------------------------------------------------------
 
 export function activate(context: vscode.ExtensionContext) {
-  // Prevent the Python extension from injecting venv activation into our terminal.
-  const pythonConfig = vscode.workspace.getConfiguration("python.terminal");
-  if (pythonConfig.get<boolean>("activateEnvironment") !== false) {
-    pythonConfig.update(
-      "activateEnvironment",
-      false,
-      vscode.ConfigurationTarget.Workspace
-    );
-  }
-
   // Dispose stale terminal and start fresh with --resume on reload/restart.
   const existing = findTerminal();
   if (existing) {

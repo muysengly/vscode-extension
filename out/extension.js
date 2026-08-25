@@ -54,12 +54,16 @@ function createTerminal(context, forceNew = false) {
             return existing;
         }
     }
+    // hideFromUser makes the Python extension skip injecting venv activation
+    // into THIS terminal (it ignores hidden terminals); we show it right away,
+    // so all other terminals keep their normal auto-activation.
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
         shellPath: path.join("C:\\Program Files", "PowerShell", "7", "pwsh.exe"),
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
         iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
         env: getEnvWithVenv(),
+        hideFromUser: true,
     });
     terminal.show();
     terminal.sendText("opencode");
@@ -216,11 +220,6 @@ function copyToClipboardAndFocus(text) {
 // BLOCK 6 — Commands (keybindings live in package.json)
 // ----------------------------------------------------------------------------
 function activate(context) {
-    // Prevent the Python extension from injecting venv activation into our terminal.
-    const pythonConfig = vscode.workspace.getConfiguration("python.terminal");
-    if (pythonConfig.get("activateEnvironment") !== false) {
-        pythonConfig.update("activateEnvironment", false, vscode.ConfigurationTarget.Workspace);
-    }
     // Dispose stale terminal and start fresh with --resume on reload/restart.
     const existing = findTerminal();
     if (existing) {
