@@ -221,12 +221,6 @@ function activate(context) {
     if (pythonConfig.get("activateEnvironment") !== false) {
         pythonConfig.update("activateEnvironment", false, vscode.ConfigurationTarget.Workspace);
     }
-    const existing = findTerminal();
-    if (!existing) {
-        opencodeStarted = false;
-        createTerminal(context);
-        setStatus("OpenCode: started.");
-    }
     context.subscriptions.push(vscode.commands.registerCommand("extension.startOpenCode", () => {
         const existing = findTerminal();
         if (existing) {

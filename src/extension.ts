@@ -280,13 +280,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
   }
 
-  const existing = findTerminal();
-  if (!existing) {
-    opencodeStarted = false;
-    createTerminal(context);
-    setStatus("OpenCode: started.");
-  }
-
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startOpenCode", () => {
       const existing = findTerminal();
