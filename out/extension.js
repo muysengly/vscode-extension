@@ -208,7 +208,7 @@ function copyToClipboardAndFocus(text) {
     const terminal = findTerminal();
     if (terminal) {
         terminal.show();
-        terminal.sendText(text);
+        terminal.sendText(`\x1b[200~${text}\n\x1b[201~`);
         setStatus(`OpenCode reference sent.`);
     }
 }
