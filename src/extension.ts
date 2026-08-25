@@ -252,15 +252,17 @@ async function sendExplorerSelection(uris: vscode.Uri[]): Promise<void> {
 }
 
 // ----------------------------------------------------------------------------
-// BLOCK 5 — Copy reference to clipboard, then focus OpenCode
+// BLOCK 5 — Copy reference to clipboard, then send to OpenCode terminal
 // ----------------------------------------------------------------------------
 
-// Instead of auto-sending to the terminal, put the reference on the clipboard
-// and focus the OpenCode window so the user can paste (Ctrl+V) at the cursor.
 function copyToClipboardAndFocus(text: string): void {
   void vscode.env.clipboard.writeText(text);
-  findTerminal()?.show();
-  setStatus(`OpenCode reference copied — paste into OpenCode (Ctrl+V).`);
+  const terminal = findTerminal();
+  if (terminal) {
+    terminal.show();
+    terminal.sendText(text);
+    setStatus(`OpenCode reference sent.`);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -311,7 +313,7 @@ export function activate(context: vscode.ExtensionContext) {
       // Blank space in explorer → focus terminal only, no reference sent.
       if (!uris.length) {
         findTerminal()?.show();
-        setStatus("OpenCode: no file selected, sent cursor only.");
+        setStatus("OpenCode: no file selected.");
         return;
       }
 
@@ -321,13 +323,19 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("extension.explorerBlank", () => {
       const terminal = findTerminal() ?? createTerminal(context);
       terminal.show();
-      setStatus("OpenCode: no file selected, sent cursor only.");
+      setStatus("OpenCode: no file selected.");
     }),
 
-    // Ctrl+' anywhere else → just focus (or open) the terminal.
+    // Ctrl+' anywhere else → send editor reference if available, or focus terminal.
     vscode.commands.registerCommand("extension.focus", () => {
-      const terminal = findTerminal() ?? createTerminal(context);
-      terminal.show();
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.uri.scheme !== "untitled") {
+        if (!ensureTerminal(context)) return;
+        sendEditorReference();
+      } else {
+        const terminal = findTerminal() ?? createTerminal(context);
+        terminal.show();
+      }
     })
   );
 }
