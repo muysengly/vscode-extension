@@ -1,6 +1,7 @@
 src/**
 out/**/*.map
 node_modules/**
+.venv/
 .gitignore
 .vscodeignore
 jsconfig.json
