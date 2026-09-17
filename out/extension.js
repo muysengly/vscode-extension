@@ -43,7 +43,7 @@ function createTerminal(context, forceNew = false) {
     // so all other terminals keep their normal auto-activation.
     const terminal = vscode.window.createTerminal({
         name: TERMINAL_NAME,
-        shellPath: path.join("C:\\Program Files", "PowerShell", "7", "pwsh.exe"),
+        shellPath: path.join("C:\\Windows\\System32\\WindowsPowerShell\\v1.0", "powershell.exe"),
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri,
         iconPath: vscode.Uri.joinPath(context.extensionUri, "icons", "bun.png"),
         hideFromUser: true,
